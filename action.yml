@@ -1,0 +1,66 @@
+name: 'ninja-helm-upgrade'
+description: 'ninja helm upgrade'
+inputs:
+  chart_name:
+    required: true
+    description: helm chart name
+  values_set:
+    required: false
+    description: values to be passed to --set instruction to helm upgrade command
+    default: ""
+  helm_delete:
+    required: true
+    description: flag whether to delete helm chart before install/upgrade
+  kube_config:
+    required: true
+    description: kube config file contents
+  kube_namespace:
+    required: true
+    description: kube namespace to deploy to
+  docker_registry_secret_name:
+    required: true
+    description: name of the k8s secret to create private docker registry config
+  dockerhub_user:
+    required: true
+    description: username for dockerhub account
+  dockerhub_password:
+    required: true
+    description: password for dockerhub account
+  dockerhub_email:
+    required: true
+    description: email for dockerhub account
+
+runs:
+  using: "composite"
+  steps:
+    - name: Helm deploy
+      run: |
+        # install kubectl
+        curl -LO https://dl.k8s.io/release/v1.20.0/bin/linux/amd64/kubectl
+        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+        
+        # install helm
+        curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+        chmod 700 get_helm.sh
+        ./get_helm.sh
+
+        # copy kube config from secrets
+        mkdir -p ~/.kube/
+        echo ${{ inputs.kube_config }} >> ~/.kube/config.encoded
+        base64 ~/.kube/config.encoded > ~/.kube/config --decode
+        
+        # setting current namespace
+        kubectl config set-context --current --namespace=${{ inputs.kube_namespace }}
+
+        # connect private dockerhub registry
+        kubectl delete secret ${{ inputs.docker_registry_secret_name }} --ignore-not-found
+        kubectl create secret docker-registry ${{ inputs.docker_registry_secret_name }} --docker-server="https://index.docker.io/v1/" --docker-username=${{ inputs.dockerhub_user }} --docker-password=${{ inputs.dockerhub_password }} --docker-email=${{ inputs.dockerhub_email }}
+        
+        # delete helm chart
+        if [ -n "${{ inputs.helm_delete }}" ]; then
+            helm delete ${{ inputs.chart_name }} --debug
+        fi
+
+        # install/upgrade helm chart
+        helm upgrade ${{ inputs.chart_name }} ./deployment/${{ inputs.chart_name }} --set "${{ inputs.values_set }}" --install --wait --debug
+      shell: bash
