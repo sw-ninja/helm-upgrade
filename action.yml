@@ -63,4 +63,7 @@ runs:
 
         # install/upgrade helm chart
         helm upgrade ${{ inputs.chart_name }} ./deployment/${{ inputs.chart_name }} --set "${{ inputs.values_set }}" --install --wait --debug
+
+        export POD_NAME=$(kubectl get pods -l "app.kubernetes.io/name=$CHART_NAME,app.kubernetes.io/instance=$CHART_NAME" -o jsonpath="{.items[0].metadata.name}")
+        echo $(kubectl logs $POD_NAME)
       shell: bash
