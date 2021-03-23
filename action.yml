@@ -17,18 +17,22 @@ inputs:
   kube_namespace:
     required: true
     description: kube namespace to deploy to
-  docker_registry_secret_name:
-    required: true
+  dockerhub_secret_name:
+    required: false
     description: name of the k8s secret to create private docker registry config
+    default: ''
   dockerhub_user:
-    required: true
+    required: false
     description: username for dockerhub account
+    default: ''
   dockerhub_password:
-    required: true
+    required: false
     description: password for dockerhub account
+    default: ''
   dockerhub_email:
-    required: true
+    required: false
     description: email for dockerhub account
+    default: ''
   chart_repo_name:
     required: false
     description: optional chart repository namespace
@@ -69,9 +73,11 @@ runs:
         kubectl config set-context --current --namespace=${{ inputs.kube_namespace }}
 
         # connect private dockerhub registry
-        kubectl delete secret ${{ inputs.docker_registry_secret_name }} --ignore-not-found
-        kubectl create secret docker-registry ${{ inputs.docker_registry_secret_name }} --docker-server="https://index.docker.io/v1/" --docker-username=${{ inputs.dockerhub_user }} --docker-password=${{ inputs.dockerhub_password }} --docker-email=${{ inputs.dockerhub_email }}
-        
+        if [ -n "${{ inputs.dockerhub_secret_name }}" ]; then
+          kubectl delete secret ${{ inputs.dockerhub_secret_name }} --ignore-not-found
+          kubectl create secret docker-registry ${{ inputs.dockerhub_secret_name }} --docker-server="https://index.docker.io/v1/" --docker-username=${{ inputs.dockerhub_user }} --docker-password=${{ inputs.dockerhub_password }} --docker-email=${{ inputs.dockerhub_email }}
+        fi
+
         # adding helm chart repository if set
         if [ -n "${{ inputs.chart_repo_name }}" ]; then
             helm repo add "${{ inputs.chart_repo_name }}" "${{ inputs.chart_repo_url }}
