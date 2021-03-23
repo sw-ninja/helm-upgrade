@@ -96,8 +96,17 @@ runs:
             helm delete $DEPLOYMENT_NAME --debug
         fi
 
+        CHART_PATH=./deployment/${{ inputs.chart_name }}
+        if [ -d "$CHART_PATH" ]; then
+          echo "Installing helm from local chart path:" $CHART_PATH
+        else
+          CHART_PATH=${{ inputs.chart_name }}
+          echo "Installing helm from chart repository:" $CHART_PATH
+        fi
+
+
         # install/upgrade helm chart
-        helm upgrade $DEPLOYMENT_NAME ./deployment/${{ inputs.chart_name }} --set "${{ inputs.values_set }}" --install --wait --debug
+        helm upgrade $DEPLOYMENT_NAME $CHART_PATH --set "${{ inputs.values_set }}" --install --wait --debug
 
         export POD_NAME=$(kubectl get pods -l "app.kubernetes.io/name=$DEPLOYMENT_NAME,app.kubernetes.io/instance=$DEPLOYMENT_NAME" -o jsonpath="{.items[0].metadata.name}")
         echo $(kubectl logs $POD_NAME)
