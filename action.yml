@@ -29,6 +29,10 @@ inputs:
   dockerhub_email:
     required: true
     description: email for dockerhub account
+  custom_bash:
+    required: false
+    description: custom bash script to run before upgrade
+    default: ''
 
 runs:
   using: "composite"
@@ -56,6 +60,9 @@ runs:
         kubectl delete secret ${{ inputs.docker_registry_secret_name }} --ignore-not-found
         kubectl create secret docker-registry ${{ inputs.docker_registry_secret_name }} --docker-server="https://index.docker.io/v1/" --docker-username=${{ inputs.dockerhub_user }} --docker-password=${{ inputs.dockerhub_password }} --docker-email=${{ inputs.dockerhub_email }}
         
+        # running custom bash script if set
+        [ -n "${{ inputs.custom_bash }}" ] && eval "${{ inputs.custom_bash }}"
+
         # delete helm chart
         if [ -n "${{ inputs.helm_delete }}" ]; then
             helm delete ${{ inputs.chart_name }} --debug
