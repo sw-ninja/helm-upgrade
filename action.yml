@@ -37,6 +37,10 @@ inputs:
     required: false
     description: optional chart repository url (needs to be set together with chart_repo_name)
     default: ''
+  deployment_name:
+    required: false
+    description: optional deployment name (if not set chart_name will be used a deployment name)
+    default: ''
   custom_bash:
     required: false
     description: custom bash script to run before upgrade
@@ -73,17 +77,22 @@ runs:
             helm repo add "${{ inputs.chart_repo_name }}" "${{ inputs.chart_repo_url }}
         fi
 
+        DEPLOYMENT_NAME=${{ inputs.chart_name }}
+        if [ -n "${{ inputs.deployment_name }}" ]; then
+            DEPLOYMENT_NAME=${{ inputs.deployment_name }}
+        fi
+
         # running custom bash script if set
         [ -n "${{ inputs.custom_bash }}" ] && eval "${{ inputs.custom_bash }}"
 
         # delete helm chart
         if [ -n "${{ inputs.helm_delete }}" ]; then
-            helm delete ${{ inputs.chart_name }} --debug
+            helm delete $DEPLOYMENT_NAME --debug
         fi
 
         # install/upgrade helm chart
-        helm upgrade ${{ inputs.chart_name }} ./deployment/${{ inputs.chart_name }} --set "${{ inputs.values_set }}" --install --wait --debug
+        helm upgrade $DEPLOYMENT_NAME ./deployment/${{ inputs.chart_name }} --set "${{ inputs.values_set }}" --install --wait --debug
 
-        export POD_NAME=$(kubectl get pods -l "app.kubernetes.io/name=$CHART_NAME,app.kubernetes.io/instance=$CHART_NAME" -o jsonpath="{.items[0].metadata.name}")
+        export POD_NAME=$(kubectl get pods -l "app.kubernetes.io/name=$DEPLOYMENT_NAME,app.kubernetes.io/instance=$DEPLOYMENT_NAME" -o jsonpath="{.items[0].metadata.name}")
         echo $(kubectl logs $POD_NAME)
       shell: bash
