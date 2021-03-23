@@ -80,7 +80,7 @@ runs:
 
         # adding helm chart repository if set
         if [ -n "${{ inputs.chart_repo_name }}" ]; then
-            helm repo add "${{ inputs.chart_repo_name }}" "${{ inputs.chart_repo_url }}
+            helm repo add "${{ inputs.chart_repo_name }}" "${{ inputs.chart_repo_url }}"
         fi
 
         DEPLOYMENT_NAME=${{ inputs.chart_name }}
