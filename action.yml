@@ -29,6 +29,14 @@ inputs:
   dockerhub_email:
     required: true
     description: email for dockerhub account
+  chart_repo_name:
+    required: false
+    description: optional chart repository namespace
+    default: ''
+  chart_repo_url:
+    required: false
+    description: optional chart repository url (needs to be set together with chart_repo_name)
+    default: ''
   custom_bash:
     required: false
     description: custom bash script to run before upgrade
@@ -60,6 +68,11 @@ runs:
         kubectl delete secret ${{ inputs.docker_registry_secret_name }} --ignore-not-found
         kubectl create secret docker-registry ${{ inputs.docker_registry_secret_name }} --docker-server="https://index.docker.io/v1/" --docker-username=${{ inputs.dockerhub_user }} --docker-password=${{ inputs.dockerhub_password }} --docker-email=${{ inputs.dockerhub_email }}
         
+        # adding helm chart repository if set
+        if [ -n "${{ inputs.chart_repo_name }}" ]; then
+            helm repo add "${{ inputs.chart_repo_name }}" "${{ inputs.chart_repo_url }}
+        fi
+
         # running custom bash script if set
         [ -n "${{ inputs.custom_bash }}" ] && eval "${{ inputs.custom_bash }}"
 
