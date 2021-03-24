@@ -104,9 +104,17 @@ runs:
           echo "Installing helm from chart repository:" $CHART_PATH
         fi
 
-
-        # install/upgrade helm chart
-        helm upgrade $DEPLOYMENT_NAME $CHART_PATH --set "${{ inputs.values_set }}" --install --wait --debug
+        # checking for values override
+        VALUES_OVERRIDE_FILE=./deployment/$DEPLOYMENT_NAME/values.${{ github.ref }}.yaml
+        
+        if [ -f "$VALUES_OVERRIDE_FILE" ]; then
+          echo "Using override file with helm values:" $VALUES_OVERRIDE_FILE
+          # install/upgrade helm chart
+          helm upgrade $DEPLOYMENT_NAME $CHART_PATH --set "${{ inputs.values_set }}" -f $VALUES_OVERRIDE_FILE --install --wait --debug
+        else
+          # install/upgrade helm chart
+          helm upgrade $DEPLOYMENT_NAME $CHART_PATH --set "${{ inputs.values_set }}"  --install --wait --debug
+        fi
 
         export POD_NAME=$(kubectl get pods -l "app.kubernetes.io/name=$DEPLOYMENT_NAME,app.kubernetes.io/instance=$DEPLOYMENT_NAME" -o jsonpath="{.items[0].metadata.name}")
         echo $(kubectl logs $POD_NAME)
