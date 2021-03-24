@@ -104,14 +104,21 @@ runs:
           echo "Installing helm from chart repository:" $CHART_PATH
         fi
 
+        REF=${{ github.ref }}
+        # Strip git ref prefix from version
+        VERSION=$(echo "$REF" | sed -e 's,.*/\(.*\),\1,')
+        # # Strip "v" prefix from tag name
+        # [[ "$REF" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+
         # checking for values override
-        VALUES_OVERRIDE_FILE=./deployment/$DEPLOYMENT_NAME/values.${{ github.ref }}.yaml
+        VALUES_OVERRIDE_FILE=./deployment/$DEPLOYMENT_NAME/values.$VERSION.yaml
         
         if [ -f "$VALUES_OVERRIDE_FILE" ]; then
           echo "Using override file with helm values:" $VALUES_OVERRIDE_FILE
           # install/upgrade helm chart
           helm upgrade $DEPLOYMENT_NAME $CHART_PATH --set "${{ inputs.values_set }}" -f $VALUES_OVERRIDE_FILE --install --wait --debug
         else
+          echo "Values override file does not exist:" $VALUES_OVERRIDE_FILE
           # install/upgrade helm chart
           helm upgrade $DEPLOYMENT_NAME $CHART_PATH --set "${{ inputs.values_set }}"  --install --wait --debug
         fi
