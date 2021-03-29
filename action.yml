@@ -120,7 +120,7 @@ runs:
         else
           echo "Values override file does not exist:" $VALUES_OVERRIDE_FILE
           # install/upgrade helm chart
-          helm upgrade $DEPLOYMENT_NAME $CHART_PATH --set "${{ inputs.values_set }}"  --install --wait --debug
+          helm upgrade $DEPLOYMENT_NAME $CHART_PATH --set "${{ inputs.values_set }}"  --install --wait --timeout 1m0s --debug
         fi
 
         export POD_NAME=$(kubectl get pods -l "app.kubernetes.io/name=$DEPLOYMENT_NAME,app.kubernetes.io/instance=$DEPLOYMENT_NAME" -o jsonpath="{.items[0].metadata.name}")
