@@ -61,6 +61,7 @@ runs:
         base64 ~/.kube/config.encoded > ~/.kube/config --decode
 
         # setting current namespace
+        kubectl create namespace ${{ inputs.kube_namespace }} --dry-run=client -o yaml | kubectl apply -f -
         kubectl config set-context --current --namespace=${{ inputs.kube_namespace }}
 
         # connect private dockerhub registry
