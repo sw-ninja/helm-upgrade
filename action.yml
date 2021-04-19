@@ -59,6 +59,7 @@ runs:
         mkdir -p ~/.kube/
         echo ${{ inputs.kube_config }} >> ~/.kube/config.encoded
         base64 ~/.kube/config.encoded > ~/.kube/config --decode
+        chmod 600 ~/.kube/config ~/.kube/config.encoded
 
         # setting current namespace
         kubectl create namespace ${{ inputs.kube_namespace }} --dry-run=client -o yaml | kubectl apply -f -
