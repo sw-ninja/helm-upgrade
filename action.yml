@@ -58,7 +58,7 @@ runs:
         # copy kube config from secrets
         mkdir -p ~/.kube/
         echo ${{ inputs.kube_config }} >> ~/.kube/config.encoded
-        /usr/bin/base64 ~/.kube/config.encoded > ~/.kube/config --decode
+        base64 ~/.kube/config.encoded > ~/.kube/config --decode
 
         # setting current namespace
         kubectl config set-context --current --namespace=${{ inputs.kube_namespace }}
