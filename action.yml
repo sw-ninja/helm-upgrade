@@ -55,21 +55,14 @@ runs:
   steps:
     - name: Helm deploy
       run: |
-        # install kubectl
-        curl -LO https://dl.k8s.io/release/v1.20.0/bin/linux/amd64/kubectl
-        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-        
-        # install helm
-        curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
-        chmod 700 get_helm.sh
-        ./get_helm.sh
-
         # copy kube config from secrets
         mkdir -p ~/.kube/
         echo ${{ inputs.kube_config }} >> ~/.kube/config.encoded
         base64 ~/.kube/config.encoded > ~/.kube/config --decode
-        
+        chmod 600 ~/.kube/config ~/.kube/config.encoded
+
         # setting current namespace
+        kubectl create namespace ${{ inputs.kube_namespace }} --dry-run=client -o yaml | kubectl apply -f -
         kubectl config set-context --current --namespace=${{ inputs.kube_namespace }}
 
         # connect private dockerhub registry
@@ -112,7 +105,7 @@ runs:
 
         # checking for values override
         VALUES_OVERRIDE_FILE=./deployment/$DEPLOYMENT_NAME/values.$VERSION.yaml
-        
+
         if [ -f "$VALUES_OVERRIDE_FILE" ]; then
           echo "Using override file with helm values:" $VALUES_OVERRIDE_FILE
           # install/upgrade helm chart
