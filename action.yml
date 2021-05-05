@@ -45,6 +45,9 @@ inputs:
     required: false
     description: optional deployment name (if not set chart_name will be used a deployment name)
     default: ''
+  wait_timeout:
+    required: false
+    description: optional timeout for helm to wait for deployment to complete
   custom_bash:
     required: false
     description: custom bash script to run before upgrade
@@ -106,14 +109,20 @@ runs:
         # checking for values override
         VALUES_OVERRIDE_FILE=./deployment/$DEPLOYMENT_NAME/values.$VERSION.yaml
 
+        # override wait timeout if specified
+        WAIT_TIMEOUT=5m0s
+        if [ -n "${{ inputs.wait_timeout }}" ]; then
+            WAIT_TIMEOUT=${{ inputs.wait_timeout }}
+        fi
+
         if [ -f "$VALUES_OVERRIDE_FILE" ]; then
           echo "Using override file with helm values:" $VALUES_OVERRIDE_FILE
           # install/upgrade helm chart
-          helm upgrade $DEPLOYMENT_NAME $CHART_PATH --set "${{ inputs.values_set }}" -f $VALUES_OVERRIDE_FILE --install --wait --debug
+          helm upgrade $DEPLOYMENT_NAME $CHART_PATH --set "${{ inputs.values_set }}" -f $VALUES_OVERRIDE_FILE --install --wait --timeout $WAIT_TIMEOUT --debug
         else
           echo "Values override file does not exist:" $VALUES_OVERRIDE_FILE
           # install/upgrade helm chart
-          helm upgrade $DEPLOYMENT_NAME $CHART_PATH --set "${{ inputs.values_set }}"  --install --wait --timeout 5m0s --debug
+          helm upgrade $DEPLOYMENT_NAME $CHART_PATH --set "${{ inputs.values_set }}"  --install --wait --timeout $WAIT_TIMEOUT --debug
         fi
 
         export POD_NAME=$(kubectl get pods -l "app.kubernetes.io/name=$DEPLOYMENT_NAME,app.kubernetes.io/instance=$DEPLOYMENT_NAME" -o jsonpath="{.items[0].metadata.name}")
